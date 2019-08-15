@@ -1,40 +1,44 @@
 import React, { useEffect, useState } from "react";
-import { Button, Avatar, Container, Table, TableCell, TableHead, TableRow, TableBody, FormControl, InputLabel, Input } from "@material-ui/core";
+import { Button, Snackbar, CircularProgress, Avatar, Container, Table, TableCell, TableHead, TableRow, TableBody, FormControl, InputLabel, Input } from "@material-ui/core";
 import { useSelector, useDispatch } from "react-redux";
 import { withRouter } from "react-router-dom";
 import { useAsync } from "react-async";
 import { loadContacts } from "../api/contact";
 import ModalDialog from '../components/ModalDialog';
 
-//import LoadingIndicator from "app/components/loadingindicator";
-//import { selectCustomer } from "app/store/reducers/context.redux";
-//import { rtFilterData, RTSelectAllCheckbox, RTCheckbox } from "app/components/react-table-tools";
+import LoadingIndicator from "../components/LoadingIndicator";
 
 function ContactTable({ history, searchTerm }) {
 	const dispatch = useDispatch();
 	const contact = useSelector(({ contact }) => contact);
     
-	const { data, error, isLoading } = useAsync(loadContacts, { companyId: 1, customerId: 1 });
+	const { data=[], error, isLoading } = useAsync(loadContacts, { companyId: 1, customerId: 1 });
     
 	const [filteredData, setFilteredData] = useState([]);
 	const searchColumns = ["name", "extended_name", "ext_system_id", "street", "city"];
 
-	/* useEffect(() => {
-		rtFilterData(filteredData, setFilteredData, data, searchTerm, searchColumns);
-	}, [data, searchTerm, searchColumns]); */
+    const [notificationOpen, setNotificationOpen] = React.useState(false);
 
-	if (isLoading) return <div>Loading...</div>;
+    function handleClose(event, reason) {
+        if (reason === 'clickaway') {
+        return;
+        }
+
+        setNotificationOpen(false);
+    }
+
+	if (isLoading) return <LoadingIndicator />;
     if (error) return "Error:" + error;
     
     let createContactModal = React.createRef();
 
     function openCreateContactModal() {
-        console.log(createContactModal, "createContact")
         createContactModal.current.handleClickOpen();
     }
 
     function createContact() {
-        alert("Created Contact")
+        setNotificationOpen(true);
+        createContactModal.current.handleClose();
     }
 
 	return (
@@ -106,57 +110,20 @@ function ContactTable({ history, searchTerm }) {
                     />
                 </FormControl>
             </ModalDialog>
+            <Snackbar
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center',
+                }}
+                open={notificationOpen}
+                autoHideDuration={3000}
+                onClose={handleClose}
+                ContentProps={{
+                    'aria-describedby': 'message-id',
+                }}
+                message={<span id="message-id">Contact Created Succesfuly</span>}
+            />
         </div>
-        /* <ReactTable
-			className="-striped -highlight h-full w-full sm:rounded-16 overflow-hidden"
-			getTrProps={(state, rowInfo, column) => {
-				return {
-					className: "cursor-pointer",
-					onClick: (e, handleOriginal) => {
-						if (rowInfo) {
-							dispatch(selectCustomer(rowInfo.original));
-							history.push("/c/" + companyID + "/customer/" + rowInfo.original.id + "/");
-						}
-					},
-				};
-			}}
-			data={filteredData}
-			columns={[
-				{
-					accessor: "id",
-					Cell: row => (
-						<Avatar className="mr-8" alt={row.original.name} src={row.original.images[0].path} />
-					),
-					className: "justify-center",
-					width: 64,
-					sortable: false,
-				},
-				{
-					Header: "Nr",
-					accessor: "ext_system_id",
-					width: 100,
-				},
-				{
-					Header: "Name",
-					accessor: "name",
-					className: "font-bold",
-				},
-				{
-					Header: "",
-					accessor: "extended_name",
-				},
-				{
-					Header: "Street",
-					accessor: "street",
-				},
-				{
-					Header: "City",
-					accessor: "city",
-				},
-			]}
-			defaultPageSize={10}
-			noDataText="No Customers found"
-		/> */
 	);
 }
 
